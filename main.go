@@ -216,6 +216,7 @@ func main() {
 	r.POST("/login", LoginUser)
 	protected := r.Group("/api")
 	protected.Use(AuthMiddleware()) // 应用鉴权中间件
+	//测试一下版本回滚
 
 	// 示例受保护接口
 	protected.GET("/userinfo", GetUserInfo)
