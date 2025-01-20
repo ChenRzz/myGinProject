@@ -3,27 +3,47 @@ package application
 import (
 	"context"
 	"errors"
+	"github.com/goccy/go-json"
 	"golang.org/x/crypto/bcrypt"
 	"my_gin_project/domain"
 )
 
 type UserService struct {
+	messagePublisher  domain.EventProducer
 	userRepository    domain.UserRepository
 	sessionRepository domain.SessionRepository
 }
 
-func NewUserService(useRepository domain.UserRepository, sessionRepository domain.SessionRepository) *UserService {
+func NewUserService(messagePublisher domain.EventProducer, useRepository domain.UserRepository, sessionRepository domain.SessionRepository) *UserService {
 	return &UserService{
+		messagePublisher:  messagePublisher,
 		userRepository:    useRepository,
 		sessionRepository: sessionRepository,
 	}
 }
 
+func (us *UserService) RegisterPublish(username, password, email string) error {
+	userdata := map[string]string{
+		"username": username,
+		"password": password,
+		"email":    email,
+	}
+	eventBody, err := json.Marshal(userdata)
+	if err != nil {
+		return err
+	}
+	newEvent := domain.Event{
+		Name: "user_register",
+		Body: eventBody,
+	}
+	return us.messagePublisher.Publish(newEvent)
+}
+
 func (us *UserService) Register(username, password, email string) error {
-	if _, err := us.userRepository.FindByUsername(username); err != nil {
+	if _, err := us.userRepository.FindByUsername(username); err == nil {
 		return errors.New("Username has been registered")
 	}
-	if _, err := us.userRepository.FindByEmail(email); err != nil {
+	if _, err := us.userRepository.FindByEmail(email); err == nil {
 		return errors.New("Email has been registered")
 	}
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -90,5 +110,4 @@ func (us *UserService) IsLogged(ctx context.Context, sessionID string) (uint, er
 		return 0, errors.New("User not logged in")
 	}
 	return userid, nil
-
 }

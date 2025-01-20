@@ -14,7 +14,6 @@ type WebHandler struct {
 func NewWebHandler(service *application.UserService) *WebHandler {
 	return &WebHandler{uerService: service}
 }
-
 func (h *WebHandler) Register(c *gin.Context) {
 	var req struct {
 		Username string `json:"username" binding:"required"`
@@ -37,11 +36,12 @@ func (h *WebHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "密码只能包含字母和数字"})
 		return
 	}
-	err = h.uerService.Register(req.Username, req.Password, req.Email)
+	err = h.uerService.RegisterPublish(req.Username, req.Password, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "register success"})
+	c.JSON(http.StatusOK, gin.H{"message": "已加入注册队列"})
 }
 
 func (h *WebHandler) Login(c *gin.Context) {
