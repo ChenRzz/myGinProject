@@ -2,31 +2,23 @@ package main
 
 import (
 	"log"
-	"my_gin_project/application"
+	"my_gin_project/config"
 	"my_gin_project/consumerMQ"
-	"my_gin_project/infrastructure"
-	"my_gin_project/webinterface"
+	"my_gin_project/utils"
+	"my_gin_project/webinterface/handler"
+	"my_gin_project/webinterface/router"
 )
 
 func main() {
-	infrastructure.InitDB()
-	infrastructure.InitRedis()
-	userRepository := infrastructure.NewUserRepository()
-	sessionRepository := infrastructure.NewSessionManger()
-	nameserver := []string{"172.18.0.4:9876"}
-	log.Printf("Using RocketMQ NameServer: %v", nameserver)
-	eventPublisher, err := infrastructure.NewRocketMQPublisher(nameserver)
-	if err != nil {
-		panic(err)
-	}
-	userService := application.NewUserService(eventPublisher, userRepository, sessionRepository)
-	webHandler := webinterface.NewWebHandler(userService)
-	router := webinterface.SetupRouter(webHandler)
-	go func() {
+	webHandler := handler.NewWebHandler()
+	router := router.SetupRouter(webHandler)
+
+	utils.SafeGo(func() {
 		log.Println("启动 RocketMQ 消费者...")
-		consumerMQ.StartUserConsumer(nameserver, userService)
-	}()
-	err = router.Run(":8081")
+		consumerMQ.NewUserConsumer(config.Nameserver).Start()
+	})
+
+	err := router.Run(":8081")
 	if err != nil {
 		return
 	}

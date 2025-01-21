@@ -1,4 +1,4 @@
-package domain
+package infrastructure
 
 type Event struct {
 	Name string

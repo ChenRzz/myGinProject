@@ -3,11 +3,16 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"log"
+	"sync"
+
+	"github.com/go-redis/redis/v8"
 )
 
-var redisClient *redis.Client
+var (
+	redisClient   *redis.Client
+	onceInitRedis sync.Once
+)
 
 func InitRedis() {
 	redisClient = redis.NewClient(&redis.Options{
@@ -23,6 +28,7 @@ func InitRedis() {
 	fmt.Println("Redis 连接成功")
 }
 
-func GetRedisClient1() *redis.Client {
+func GetRedisClient() *redis.Client {
+	onceInitRedis.Do(InitRedis)
 	return redisClient
 }

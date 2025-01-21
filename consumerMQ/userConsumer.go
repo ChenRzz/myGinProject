@@ -11,15 +11,27 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 )
 
+type UserConsumer struct {
+	userApplication application.IUserApplication
+	nameServers     []string
+}
+
+func NewUserConsumer(nameServers []string) Consumer {
+	return &UserConsumer{
+		userApplication: application.NewUserApplication(),
+		nameServers:     nameServers,
+	}
+}
+
 // StartUserConsumer 启动用户注册消费者
-func StartUserConsumer(nameServers []string, userService *application.UserService) {
+func (u *UserConsumer) Start() {
 	// 获取 RocketMQ NameServer
-	log.Printf("RocketMQ Consumer 连接 NameServer: %s", nameServers[0])
+	log.Printf("RocketMQ Consumer 连接 NameServer: %v", u.nameServers)
 
 	// 创建 RocketMQ Consumer
 	c, err := rocketmq.NewPushConsumer(
 		consumer.WithGroupName("user-consumer-group"),
-		consumer.WithNameServer(nameServers),
+		consumer.WithNameServer(u.nameServers),
 	)
 	if err != nil {
 		log.Fatalf("创建 RocketMQ Consumer 失败: %s", err.Error())
@@ -38,8 +50,8 @@ func StartUserConsumer(nameServers []string, userService *application.UserServic
 				return consumer.ConsumeRetryLater, err
 			}
 
-			// 调用 UserService 处理注册逻辑
-			err := userService.Register(userData.Username, userData.Password, userData.Email)
+			// 调用 userService 处理注册逻辑
+			err := u.userApplication.Register(userData.Username, userData.Password, userData.Email)
 			if err != nil {
 				log.Printf("注册用户失败: %s", err.Error())
 				return consumer.ConsumeRetryLater, err
