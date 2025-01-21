@@ -2,35 +2,35 @@ package infrastructure
 
 import (
 	"context"
+
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
-	"my_gin_project/domain"
 )
 
 type RocketmqPublisher struct {
 	producer rocketmq.Producer
 }
 
-func NewRocketMQPublisher(nameServers []string) (*RocketmqPublisher, error) {
+func NewRocketMQPublisher(nameServers []string) *RocketmqPublisher {
 	p, err := rocketmq.NewProducer(
 		producer.WithNameServer(nameServers),
 		producer.WithRetry(2),
 	)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	err = p.Start()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return &RocketmqPublisher{producer: p}, nil
+	return &RocketmqPublisher{producer: p}
 }
 
 // Publish 发送事件到 RocketMQ
-func (r *RocketmqPublisher) Publish(event domain.Event) error {
+func (r *RocketmqPublisher) Publish(event Event) error {
 	msg := &primitive.Message{
 		Topic: event.Name,
 		Body:  event.Body,

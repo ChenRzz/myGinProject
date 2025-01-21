@@ -1,12 +1,14 @@
-package infrastructure
+package repository
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"my_gin_project/domain"
+	"my_gin_project/domain/entity"
+	"my_gin_project/infrastructure"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 )
 
 type RedisSession struct {
@@ -14,10 +16,10 @@ type RedisSession struct {
 }
 
 func NewSessionManger() *RedisSession {
-	return &RedisSession{redisClient: GetRedisClient1()}
+	return &RedisSession{redisClient: infrastructure.GetRedisClient()}
 }
 
-func (sm *RedisSession) CreateSession(ctx context.Context, user *domain.User) (string, error) {
+func (sm *RedisSession) CreateSession(ctx context.Context, user *entity.User) (string, error) {
 	sessionID := uuid.NewString() // 创建唯一的 session ID
 	err := sm.redisClient.Set(ctx, sessionID, user.ID, time.Hour*24).Err()
 	if err != nil {
