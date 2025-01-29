@@ -14,10 +14,10 @@ type IBaseRepo[T any] interface {
 	FindByID(db *gorm.DB, id uint) (*T, error)
 }
 
-type BaseRepo[T any] struct {
+type baseRepo1[T any] struct {
 }
 
-func (b *BaseRepo[T]) Create(db *gorm.DB, entity *T) error {
+func (b *baseRepo1[T]) Create(db *gorm.DB, entity *T) error {
 	err := db.Create(entity).Error
 	if err != nil {
 		return errors.New("Failed to create entity")
@@ -25,7 +25,7 @@ func (b *BaseRepo[T]) Create(db *gorm.DB, entity *T) error {
 	return nil
 }
 
-func (b *BaseRepo[T]) FindByID(db *gorm.DB, id uint) (*T, error) {
+func (b *baseRepo1[T]) FindByID(db *gorm.DB, id uint) (*T, error) {
 	var entity T
 	err := db.Where("id = ?", id).First(&entity).Error
 	if err != nil {
@@ -34,7 +34,7 @@ func (b *BaseRepo[T]) FindByID(db *gorm.DB, id uint) (*T, error) {
 	return &entity, nil
 }
 
-func (b *BaseRepo[T]) Update(db *gorm.DB, entity *T) error {
+func (b *baseRepo1[T]) Update(db *gorm.DB, entity *T) error {
 	err := db.Save(entity).Error
 	if err != nil {
 		return errors.New("Failed to update entity")
@@ -42,7 +42,7 @@ func (b *BaseRepo[T]) Update(db *gorm.DB, entity *T) error {
 	return nil
 }
 
-func (b *BaseRepo[T]) Delete(db *gorm.DB, id uint) error {
+func (b *baseRepo1[T]) Delete(db *gorm.DB, id uint) error {
 	var entity T
 	err := db.Model(entity).Updates(
 		map[string]interface{}{

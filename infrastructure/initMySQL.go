@@ -2,8 +2,8 @@ package infrastructure
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
-	"my_gin_project/domain/entity"
 	"sync"
 
 	"gorm.io/driver/mysql"
@@ -23,14 +23,9 @@ func InitDB() {
 		log.Fatalf("数据库连接失败：%v", err)
 	}
 	fmt.Println("数据库连接成功！")
-	err = db.AutoMigrate(&entity.User{})
-	if err != nil {
-		log.Fatalf("自动迁移失败: %v", err)
-	}
-	fmt.Println("用户表迁移成功")
 }
 
 func GetDB() *gorm.DB {
 	onceInitDB.Do(InitDB)
-	return db
+	return db.Session(&gorm.Session{Context: &gin.Context{}})
 }

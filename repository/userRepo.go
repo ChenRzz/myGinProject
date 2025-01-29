@@ -7,15 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type userRepository struct {
-	BaseRepo[entity.User]
+type UserRepository struct {
+	baseRepo1[entity.User]
 }
 
-func NewUserRepository() UserRepository {
-	return &userRepository{}
+func NewUserRepository() *UserRepository {
+	return &UserRepository{}
 }
 
-func (repo *userRepository) FindByUsername(db *gorm.DB, username string) (*entity.User, error) {
+func (repo *UserRepository) FindByUsername(db *gorm.DB, username string) (*entity.User, error) {
 	var user entity.User
 	err := db.Where("username = ?", username).First(&user).Error
 	if err != nil {
@@ -23,7 +23,7 @@ func (repo *userRepository) FindByUsername(db *gorm.DB, username string) (*entit
 	}
 	return &user, nil
 }
-func (repo *userRepository) FindByEmail(db *gorm.DB, email string) (*entity.User, error) {
+func (repo *UserRepository) FindByEmail(db *gorm.DB, email string) (*entity.User, error) {
 	var user entity.User
 	err := db.Where("email = ?", email).First(&user).Error
 	if err != nil {

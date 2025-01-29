@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository interface {
+type IUserRepository interface {
 	IBaseRepo[entity.User]
 	FindByUsername(db *gorm.DB, username string) (*entity.User, error)
 	FindByEmail(db *gorm.DB, email string) (*entity.User, error)

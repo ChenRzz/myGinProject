@@ -1,11 +1,10 @@
 package handler
 
 import (
-	"my_gin_project/application"
-	"net/http"
-	"regexp"
-
 	"github.com/gin-gonic/gin"
+	"my_gin_project/application"
+	"my_gin_project/infrastructure"
+	"net/http"
 )
 
 type WebHandler struct {
@@ -17,30 +16,25 @@ func NewWebHandler() *WebHandler {
 }
 
 func (h *WebHandler) Register(c *gin.Context) {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-	}
-	if err := c.ShouldBind(&req); err != nil {
+	var reqEvent infrastructure.RegisterEvent
+	if err := c.ShouldBind(&reqEvent.Body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	reqEvent.Topic = "user-register"
 
-	err := h.userApplication.RegisterPublish(req.Username, req.Password, req.Email)
+	registerProducer := infrastructure.NewKafkaProducer()
+	defer registerProducer.Producer.Close()
+	err := registerProducer.Publish(&reqEvent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "已加入注册队列"})
 }
 
 func (h *WebHandler) Login(c *gin.Context) {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+	var req LoginReq
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -68,12 +62,6 @@ func (h *WebHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	passwordRegex := `^[a-zA-Z0-9]+$`
-	matched, err := regexp.MatchString(passwordRegex, req.NewPassword)
-	if err != nil || !matched {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "密码只能包含字母和数字"})
-		return
-	}
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "未找到userID"})
@@ -82,7 +70,7 @@ func (h *WebHandler) ChangePassword(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "userID类型错误"})
 	}
-	err = h.userApplication.ChangeUserPassword(uid, req.OldPassword, req.NewPassword)
+	err := h.userApplication.ChangeUserPassword(uid, req.OldPassword, req.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}

@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
@@ -30,11 +31,12 @@ func NewRocketMQPublisher(nameServers []string) *RocketmqPublisher {
 }
 
 // Publish 发送事件到 RocketMQ
-func (r *RocketmqPublisher) Publish(event Event) error {
+func (r *RocketmqPublisher) Publish(event RegisterEvent) error {
+	eventData, err := json.Marshal(event.Body)
 	msg := &primitive.Message{
-		Topic: event.Name,
-		Body:  event.Body,
+		Topic: event.Topic,
+		Body:  eventData,
 	}
-	_, err := r.producer.SendSync(context.Background(), msg)
+	_, err = r.producer.SendSync(context.Background(), msg)
 	return err
 }

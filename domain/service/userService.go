@@ -3,19 +3,17 @@ package service
 import (
 	"context"
 	"errors"
-	"my_gin_project/config"
 	"my_gin_project/domain/entity"
-	"my_gin_project/infrastructure"
 	"my_gin_project/repository"
+	"regexp"
 
-	"github.com/goccy/go-json"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type IUserService interface {
 	// @crz RegisterPublish 这个其实应该在 adapter
-	RegisterPublish(username, password, email string) error
+	//RegisterPublish(username, password, email string) error
 	Register(db *gorm.DB, username, password, email string) error
 	CheckUserIsExist(db *gorm.DB, username, email string) error
 	Login(db *gorm.DB, ctx context.Context, username, password string) (string, error)
@@ -24,21 +22,22 @@ type IUserService interface {
 	IsLogged(ctx context.Context, sessionID string) (uint, error)
 }
 
+// test
 type userService struct {
-	messagePublisher  infrastructure.EventProducer
-	userRepository    repository.UserRepository
-	sessionRepository repository.SessionRepository
+	//messagePublisher  infrastructure.EventProducer
+	userRepository    repository.IUserRepository
+	sessionRepository repository.ISessionRepository
 }
 
 func NewUserService() IUserService {
 	return &userService{
-		messagePublisher:  infrastructure.NewRocketMQPublisher(config.Nameserver),
+		//messagePublisher:  infrastructure.NewRocketMQPublisher(config.Nameserver),
 		userRepository:    repository.NewUserRepository(),
 		sessionRepository: repository.NewSessionManger(),
 	}
 }
 
-func (us *userService) RegisterPublish(username, password, email string) error {
+/*func (us *userService) RegisterPublish(username, password, email string) error {
 	userdata := map[string]string{
 		"username": username,
 		"password": password,
@@ -54,9 +53,19 @@ func (us *userService) RegisterPublish(username, password, email string) error {
 		Body: eventBody,
 	}
 	return us.messagePublisher.Publish(newEvent)
-}
+}*/
 
 func (us *userService) Register(db *gorm.DB, username, password, email string) error {
+	userRegex := `^[a-zA-Z0-9]+$`
+	matched, err := regexp.MatchString(userRegex, username)
+	if err != nil || !matched {
+		return errors.New("用户名只能包含数字和字母")
+	}
+	passwordRegex := `^[a-zA-Z0-9]+$`
+	matched, err = regexp.MatchString(passwordRegex, password)
+	if err != nil || !matched {
+		return errors.New("密码只能包含数字和字母")
+	}
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -95,6 +104,7 @@ func (us *userService) Login(db *gorm.DB, ctx context.Context, username, passwor
 }
 
 func (us *userService) ChangeUserPassword(db *gorm.DB, userid uint, oldPassword, newPassword string) error {
+
 	user, err := us.userRepository.FindByID(db, userid)
 	if err != nil {
 		return errors.New("User not found")
@@ -103,7 +113,11 @@ func (us *userService) ChangeUserPassword(db *gorm.DB, userid uint, oldPassword,
 	if err != nil {
 		return errors.New("Password is incorrect")
 	}
-
+	passwordRegex := `^[a-zA-Z0-9]+$`
+	matched, err := regexp.MatchString(passwordRegex, newPassword)
+	if err != nil || !matched {
+		return errors.New("新密码只能包含数字和字母")
+	}
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
